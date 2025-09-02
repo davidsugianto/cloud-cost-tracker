@@ -4,6 +4,13 @@ A lightweight and extensible API to **track, analyze, and manage cloud costs** a
 
 ---
 
+## Development
+- Build the app `make build`
+- Start development server with Air live reload `make dev`
+- Run migrations `make migrate-up`
+- Rollback one migration `make migrate-down`
+- Drop everything (danger!) `make migrate-drop`
+
 ## 🚀 Features
 
 - **Project Management**

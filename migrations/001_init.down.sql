@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS budgets;
+DROP TABLE IF EXISTS costs;
+DROP TABLE IF EXISTS projects;
+DROP TABLE IF EXISTS provider_accounts;
+DROP EXTENSION IF EXISTS "uuid-ossp";
