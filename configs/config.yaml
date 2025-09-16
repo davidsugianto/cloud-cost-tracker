@@ -1,24 +1,57 @@
 server:
   port: 8080
 
-db:
-  dsn: "postgres://user:pass@localhost:5432/cloud_cost_tracker?sslmode=disable"
-  maxOpenConns: 25
-  maxIdleConns: 5
-
-redis:
-  addr: "127.0.0.1:6379"
-  db: 0
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  name: cloud_cost_tracker
+  sslmode: disable
 
 auth:
-  jwtSecret: "change-me"
-  tokenTTL: "24h"
+  jwt_secret: "supersecretjwtkey"
 
-providers:
+cors:
+  allowed_origins:
+    - "http://localhost:3000"
+    - "http://localhost:8080"
+    - "https://yourdomain.com"
+  allowed_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "OPTIONS"
+  allowed_headers:
+    - "Content-Type"
+    - "Content-Length"
+    - "Accept-Encoding"
+    - "X-CSRF-Token"
+    - "Authorization"
+    - "accept"
+    - "origin"
+    - "Cache-Control"
+    - "X-Requested-With"
+    - "AuthToken"
+    - "access-token"
+    - "x-app-key"
+    - "X-Authorization"
+    - "Referer"
+    - "Keep-Alive"
+    - "User-Agent"
+    - "If-Modified-Since"
+    - "LoginProvider"
+    - "X-Jwt-Token"
+  allow_credentials: true
+
+cloud:
   gcp:
-    billingProjectID: "your-billing-project"
-    dataset: "billing_export"
+    project_id: "my-gcp-project"
+    billing_dataset: "billing_export"
   aws:
-    enabled: false
+    account_id: "123456789012"
+    region: "us-east-1"
   alibaba:
-    enabled: false
+    account_id: "alibaba-account-id"
+    region: "ap-southeast-1"

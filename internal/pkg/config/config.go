@@ -1,32 +1,105 @@
 package config
 
 import (
-	"os"
+	"fmt"
+	"log"
+	"sync"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
 )
 
 type Config struct {
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	DBSSLMode  string
+	Server   Server   `yaml:"server"`
+	Database Database `yaml:"database"`
+	Auth     Auth     `yaml:"auth"`
+	Cloud    Cloud    `yaml:"cloud"`
+	CORS     CORS     `yaml:"cors"`
 }
 
-func New() *Config {
-	return &Config{
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", "password"),
-		DBName:     getEnv("DB_NAME", "gin_blueprint"),
-		DBSSLMode:  getEnv("DB_SSL_MODE", "disable"),
-	}
+type Server struct {
+	Port int `yaml:"port"`
 }
 
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
+type Database struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Name     string `yaml:"name"`
+	SSLMode  string `yaml:"sslmode"`
+}
+
+type Cloud struct {
+	GCP GCP `yaml:"gcp"`
+}
+
+type GCP struct {
+	ProjectID      string `yaml:"project_id"`
+	BillingDataset string `yaml:"billing_dataset"`
+}
+
+type Auth struct {
+	JWTSecret string `yaml:"jwt_secret"`
+}
+
+type CORS struct {
+	AllowedOrigins   []string `yaml:"allowed_origins"`
+	AllowedMethods   []string `yaml:"allowed_methods"`
+	AllowedHeaders   []string `yaml:"allowed_headers"`
+	AllowCredentials bool     `yaml:"allow_credentials"`
+}
+
+var (
+	cfg  *Config
+	once sync.Once
+	mu   sync.RWMutex
+)
+
+func LoadConfig(path string) (*Config, error) {
+	var err error
+	once.Do(func() {
+		v := viper.New()
+		v.SetConfigName("config")
+		v.SetConfigType("yaml")
+		v.AddConfigPath(path)
+		v.AutomaticEnv()
+
+		if err = v.ReadInConfig(); err != nil {
+			err = fmt.Errorf("error reading config file: %w", err)
+			return
+		}
+
+		var c Config
+		if err = v.Unmarshal(&c); err != nil {
+			err = fmt.Errorf("unable to decode config: %w", err)
+			return
+		}
+
+		cfg = &c
+
+		v.WatchConfig()
+		v.OnConfigChange(func(e fsnotify.Event) {
+			log.Printf("Config file changed: %s", e.Name)
+
+			var newCfg Config
+			if err := v.Unmarshal(&newCfg); err != nil {
+				log.Printf("Failed to reload config: %v", err)
+				return
+			}
+
+			mu.Lock()
+			cfg = &newCfg
+			mu.Unlock()
+			log.Println("Config reloaded successfully")
+		})
+	})
+
+	return cfg, err
+}
+
+func GetConfig() *Config {
+	mu.RLock()
+	defer mu.RUnlock()
+	return cfg
 }
